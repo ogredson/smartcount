@@ -98,6 +98,39 @@
         .export-fields-group .checkbox-container { display: flex; flex-direction: column; gap: .8rem; }
         .export-fields-group .checkbox-item { display: flex; align-items: center; }
         .export-fields-group .checkbox-item input { width: auto; margin-right: .8rem; }
+        /* Indicador de Tipo de Contagem */
+        .count-type-indicator { 
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #0ea5e9;
+            border-radius: .5rem;
+            padding: .6rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            font-size: .9rem;
+            color: #0c4a6e;
+            box-shadow: 0 1px 3px rgba(14, 165, 233, 0.1);
+        }
+        .count-type-indicator i {
+            margin-right: .5rem;
+            color: #0ea5e9;
+        }
+        .count-type-indicator.arquivo {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-color: #22c55e;
+            color: #14532d;
+        }
+        .count-type-indicator.arquivo i {
+            color: #22c55e;
+        }
+        .count-type-indicator.avulsa {
+            background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+            border-color: #eab308;
+            color: #713f12;
+        }
+        .count-type-indicator.avulsa i {
+            color: #eab308;
+        }
         @media (min-width: 768px) { .container { max-width: 750px; padding: 1rem; } .stats-container { grid-template-columns: repeat(4, 1fr); } }
         @media (min-width: 1024px) { .container { max-width: 980px; } }
         @media (min-width: 1200px) { .container { max-width: 1140px; } }
@@ -306,6 +339,12 @@
                 </div>
 
                 <div id="bipagem" class="tab-content">
+                    <!-- Indicador de Tipo de Contagem -->
+                    <div id="count-type-indicator" class="count-type-indicator">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="count-type-text">Tipo de Contagem: Não definido</span>
+                    </div>
+                    
                     <div class="card">
                         <div class="card-title"><i class="fas fa-barcode"></i> Área de Bipagem</div>
                         <div class="form-group">
@@ -317,6 +356,7 @@
                             <input type="number" id="quantity-input" value="1" min="1" />
                         </div>
                         <button id="add-scan-btn"><i class="fas fa-plus-circle"></i> Adicionar</button>
+
                     </div>
                     <div class="card">
                         <div class="card-title"><i class="fas fa-info-circle"></i> Área de Mensagens</div>
@@ -370,7 +410,7 @@
                         <div id="export-fields-detailed" class="export-fields-group hidden">
                             <legend>Campos para exportar (Linha a linha)</legend>
                             <div class="checkbox-container">
-                                <div class="checkbox-item"><input type="checkbox" id="export-detailed-codigo" data-field="codigo" checked disabled> <label for="export-detailed-codigo">Codigo</label></div>
+                                <div class="checkbox-item"><input type="checkbox" id="export-detailed-codigo" data-field="code" checked disabled> <label for="export-detailed-codigo">Codigo</label></div>
                                 <div class="checkbox-item"><input type="checkbox" id="export-detailed-qtde" data-field="quantity" checked disabled> <label for="export-detailed-qtde">Quantidade Contada</label></div>
                                 <div class="checkbox-item"><input type="checkbox" id="export-detailed-desc" data-field="description"> <label for="export-detailed-desc">Descricao</label></div>
                                 <div class="checkbox-item"><input type="checkbox" id="export-detailed-datetime" data-field="created_at"> <label for="export-detailed-datetime">Data/Hora</label></div>
@@ -551,6 +591,7 @@
                 if (e.key === 'Enter') document.getElementById('add-scan-btn').click();
             });
             document.getElementById('add-scan-btn').addEventListener('click', addScan);
+
             
             // Exportar
             document.getElementById('export-btn').addEventListener('click', exportCurrentSessionData);
@@ -745,6 +786,7 @@
                 .single();
             if (error) return showMessage(error.message, 'error');
             currentSession = session;
+            updateCountTypeIndicator();
             
             if (countType === 'avulsa') {
                 document.getElementById('avulsa-scans-card').classList.remove('hidden');
@@ -780,6 +822,7 @@
             document.getElementById('end-count-btn').classList.add('hidden');
             showMessage('Contagem encerrada com sucesso!', 'success');
             currentSession = null; products = []; scans = [];
+            updateCountTypeIndicator();
             document.getElementById('products-list').innerHTML = '<p id="no-products-msg">Nenhum produto importado ainda. Vá para a aba Configuração para importar um arquivo.</p>';
             updateProgress();
             document.getElementById('session-name').value = '';
@@ -790,6 +833,11 @@
 
         async function addScan() {
             if (!currentSession) return showMessage('Inicie uma contagem antes de escanear produtos.', 'error');
+            if (!supabase) return showMessage('Conexão com banco de dados indisponível.', 'error');
+            
+            console.log('DEBUG - currentSession:', currentSession);
+            console.log('DEBUG - currentSession.id:', currentSession.id);
+            
             const barcodeInput = document.getElementById('barcode-input');
             const quantityInput = document.getElementById('quantity-input');
             const codigo = barcodeInput.value.trim();
@@ -854,10 +902,17 @@
                 avulsaList.prepend(scanItem); 
             }
 
+            // Inserir scan na tabela scans
+            const scanData = { session_id: currentSession.id, code: codigo, quantity, description: productDescription };
+            
             const { error: scanError } = await supabase
                 .from('scans')
-                .insert([{ session_id: currentSession.id, codigo, quantity, description: productDescription }]);
-            if (scanError) console.error('Erro ao registrar scan:', scanError);
+                .insert([scanData]);
+            if (scanError) {
+                console.error('Erro ao registrar scan:', scanError);
+                showMessage(`ERRO ao gravar scan: ${scanError.message}`, 'error');
+                return;
+            }
 
             const { data: sessionData } = await supabase
                 .from('counting_sessions')
@@ -948,6 +1003,33 @@
             else if (type === 'success') messageArea.classList.add('success');
         }
 
+        function updateCountTypeIndicator() {
+            const indicator = document.getElementById('count-type-indicator');
+            const textElement = document.getElementById('count-type-text');
+            const iconElement = indicator.querySelector('i');
+            
+            if (!currentSession) {
+                indicator.className = 'count-type-indicator';
+                textElement.textContent = 'Tipo de Contagem: Não definido';
+                iconElement.className = 'fas fa-info-circle';
+                return;
+            }
+            
+            if (currentSession.count_type === 'normal') {
+                indicator.className = 'count-type-indicator arquivo';
+                textElement.textContent = 'Tipo de Contagem: Contagem com Arquivo';
+                iconElement.className = 'fas fa-file-alt';
+            } else if (currentSession.count_type === 'avulsa') {
+                indicator.className = 'count-type-indicator avulsa';
+                textElement.textContent = 'Tipo de Contagem: Contagem Avulsa';
+                iconElement.className = 'fas fa-hand-paper';
+            } else {
+                indicator.className = 'count-type-indicator';
+                textElement.textContent = 'Tipo de Contagem: Não definido';
+                iconElement.className = 'fas fa-info-circle';
+            }
+        }
+
         async function loadUserData() {
             if (!supabase || !currentUser) return;
             // Carregar sessões ativas
@@ -977,6 +1059,7 @@
                 document.getElementById('end-count-btn').classList.remove('hidden');
                 updateProgress();
             }
+            updateCountTypeIndicator();
         }
 
         async function loadSessionsHistory() {
