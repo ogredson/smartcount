@@ -249,6 +249,13 @@
   color: #28a745;
 }
 
+/* Ocultar abas específicas em dispositivos móveis */
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
 .sync-status.error {
   color: #dc3545;
 }
@@ -319,12 +326,12 @@
 
         <div id="main-app" class="hidden">
             <div class="nav-tabs">
-                <div class="tab active" data-tab="configuracao"><i class="fas fa-cog"></i> Configuração</div>
+                <div class="tab active desktop-only" data-tab="configuracao"><i class="fas fa-cog"></i> Configuração</div>
                 <div class="tab" data-tab="contagem"><i class="fas fa-clipboard-list"></i> Contagem</div>
                 <div class="tab" data-tab="bipagem"><i class="fas fa-barcode"></i> Bipagem</div>
                 <div class="tab" data-tab="produtos"><i class="fas fa-boxes"></i> Produtos</div>
-                <div class="tab" data-tab="exportar"><i class="fas fa-file-export"></i> Exportar</div>
-                <div class="tab" data-tab="historico"><i class="fas fa-history"></i> Histórico</div>
+                <div class="tab desktop-only" data-tab="exportar"><i class="fas fa-file-export"></i> Exportar</div>
+                <div class="tab desktop-only" data-tab="historico"><i class="fas fa-history"></i> Histórico</div>
                 <div class="tab" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Sair</div>
             </div>
 
@@ -647,6 +654,14 @@
         function showMainApp() {
             authSection.classList.add('hidden');
             mainApp.classList.remove('hidden');
+            
+            // Em dispositivos móveis, ativar aba "Contagem" se "Configuração" estiver oculta
+            if (window.innerWidth <= 768) {
+                const configTab = document.querySelector('.tab[data-tab="configuracao"]');
+                if (configTab && configTab.classList.contains('desktop-only')) {
+                    switchTab('contagem');
+                }
+            }
         }
         
         function updateUserInfo() {
