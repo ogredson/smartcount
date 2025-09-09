@@ -1262,9 +1262,35 @@
                 
                 updateProgress();
             } else {
-                // Limpar interface quando não há sessão ativa
+                // Limpar interface quando não há sessão ativa (sessão foi encerrada)
+                currentSession = null;
                 products = [];
                 renderProducts();
+                
+                // Resetar botões para estado inicial
+                document.getElementById('start-count-btn').classList.remove('hidden');
+                document.getElementById('end-count-btn').classList.add('hidden');
+                
+                // Ocultar card de bipagens avulsas
+                document.getElementById('avulsa-scans-card').classList.add('hidden');
+                
+                // Limpar lista de bipagens avulsas
+                const avulsaList = document.getElementById('avulsa-scans-list');
+                if (avulsaList) {
+                    avulsaList.innerHTML = '';
+                }
+                
+                // Limpar campo de código de barras
+                const barcodeInput = document.getElementById('barcode-input');
+                if (barcodeInput) {
+                    barcodeInput.value = '';
+                }
+                
+                // Resetar quantidade para 1
+                const quantityInput = document.getElementById('quantity-input');
+                if (quantityInput) {
+                    quantityInput.value = '1';
+                }
             }
             updateCountTypeIndicator();
         }
