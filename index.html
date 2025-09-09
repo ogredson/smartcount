@@ -606,6 +606,32 @@
                 syncInterval = null;
             }
         }
+        
+        function setupVisibilitySync() {
+            // Sincronizar quando a página se torna visível (usuário volta ao desktop)
+            document.addEventListener('visibilitychange', async () => {
+                if (!document.hidden && currentUser && supabase) {
+                    console.log('Página ficou visível - sincronizando dados...');
+                    await syncData();
+                }
+            });
+            
+            // Sincronizar quando a janela ganha foco
+            window.addEventListener('focus', async () => {
+                if (currentUser && supabase) {
+                    console.log('Janela ganhou foco - sincronizando dados...');
+                    await syncData();
+                }
+            });
+            
+            // Sincronizar quando a página é mostrada (volta de outras abas)
+            window.addEventListener('pageshow', async (event) => {
+                if (currentUser && supabase) {
+                    console.log('Página mostrada - sincronizando dados...');
+                    await syncData();
+                }
+            });
+        }
 
         async function initApp() {
             setupEventListeners(); // garantir que botões funcionem mesmo se SDK falhar
@@ -633,6 +659,7 @@
                         updateUserInfo();
                         loadUserData();
                         startAutoSync();
+                        setupVisibilitySync();
                     } else {
                         await supabase.auth.signOut();
                         showAuthSection();
@@ -780,6 +807,7 @@
                 updateUserInfo();
                 loadUserData();
                 startAutoSync();
+                setupVisibilitySync();
             } catch (err) {
                 console.error(err);
                 showAuthMessage(err.message || 'Erro inesperado. Tente novamente.', 'error');
