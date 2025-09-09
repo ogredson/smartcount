@@ -1257,10 +1257,14 @@
                 
                 // Atualizar lista de produtos na interface
                 if (currentSession && currentSession.count_type === 'normal' && products.length > 0) {
-                    updateProductsList();
+                    renderProducts();
                 }
                 
                 updateProgress();
+            } else {
+                // Limpar interface quando não há sessão ativa
+                products = [];
+                renderProducts();
             }
             updateCountTypeIndicator();
         }
