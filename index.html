@@ -706,24 +706,24 @@
              const startBtn = document.getElementById('start-count-btn');
              const endBtn = document.getElementById('end-count-btn');
              
+             // Limpar estilos inline para evitar conflitos
+             startBtn.style.display = '';
+             endBtn.style.display = '';
+             
              if (isMobileDevice()) {
                  // Em mobile: apenas botão "Encerrar Contagem" deve estar disponível quando há sessão ativa
-                 startBtn.style.display = 'none';
+                 startBtn.classList.add('hidden');
                  if (currentSession && currentSession.status === 'active') {
-                     endBtn.style.display = 'block';
                      endBtn.classList.remove('hidden');
                  } else {
-                     endBtn.style.display = 'none';
                      endBtn.classList.add('hidden');
                  }
              } else {
                  // Em desktop: apenas botão "Iniciar Contagem" deve estar disponível quando não há sessão ativa
-                 endBtn.style.display = 'none';
+                 endBtn.classList.add('hidden');
                  if (!currentSession || currentSession.status !== 'active') {
-                     startBtn.style.display = 'block';
                      startBtn.classList.remove('hidden');
                  } else {
-                     startBtn.style.display = 'none';
                      startBtn.classList.add('hidden');
                  }
              }
@@ -1340,6 +1340,8 @@
                 }
             }
             updateCountTypeIndicator();
+            // Garantir que os botões sejam atualizados após a sincronização
+            updateButtonsVisibility();
         }
 
         async function loadSessionsHistory() {
